@@ -158,33 +158,38 @@ function updatePreview() {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // --- TEXT BLOCK (auto spacing, fixed font size) ---
-ctx.font = '56px Arial, sans-serif';
+ // Text
 
-const nonEmpty = Object.entries(fields)
-  .filter(([_, v]) => v.trim().length > 0);
 
-// QR height to visually match
-const qrSize = 380;
 
-// Number of text lines
-const lineCount = nonEmpty.length || 1;
+  ctx.font = '56px "Arial", sans-serif';
 
-// Auto calculate spacing so text block ~ matches QR height
-// Slight padding top/bottom so it doesn’t touch the QR edges
-const totalAvailable = qrSize - 40;  // 40px padding
-const line = totalAvailable / lineCount;
 
-// Starting Y to align with QR vertically
-let y = 110 + line * 0.8;
+  let y = 140;
 
-const left = 90;
 
-for (const [label, val] of nonEmpty) {
-  drawDarkText(ctx, `${label.padEnd(4)} ${val.toUpperCase()}`, left, Math.round(y));
-  y += line;
-  }
+  const line = 80;
 
+
+  const left = 90;
+
+
+
+
+
+  for (const [label, val] of Object.entries(fields)) {
+
+
+    if (val.trim().length > 0) {
+
+
+      drawDarkText(ctx, `${label.padEnd(5)} ${val.toUpperCase()}`, left, y);
+
+
+      y += line;
+
+
+    }
   // QR code
   const temp = document.createElement("div");
   temp.style.position = "absolute";
