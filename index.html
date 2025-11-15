@@ -124,7 +124,7 @@ function buildQrText(parts) {
     .map(x => x.trim())
     .filter(x => x.length > 0)
     .map(x => x.toUpperCase())
-    .join("-");
+    .join("--");
 }
 
 function drawDarkText(ctx, text, x, y) {
