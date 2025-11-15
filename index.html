@@ -158,38 +158,19 @@ function updatePreview() {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
- // Text
-
-
-
+  // Text
   ctx.font = '56px "Arial", sans-serif';
-
-
-  let y = 140;
-
-
-  const line = 80;
-
-
+  let y = 150;
+  const line = 105;
   const left = 90;
 
-
-
-
-
   for (const [label, val] of Object.entries(fields)) {
-
-
     if (val.trim().length > 0) {
-
-
       drawDarkText(ctx, `${label.padEnd(5)} ${val.toUpperCase()}`, left, y);
-
-
       y += line;
-
-
     }
+  }
+
   // QR code
   const temp = document.createElement("div");
   temp.style.position = "absolute";
