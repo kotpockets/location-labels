@@ -112,7 +112,6 @@
   <canvas id="labelCanvas" width="1200" height="600"></canvas>
   <div class="hint">
     PNG is 1200×600 for sharp 2×4 label printing. Blank fields are skipped in text & QR.
-    *DIY Location Tag Program For Testing Purposes*
   </div>
 </div>
 
@@ -128,6 +127,7 @@ function buildQrText(parts) {
 }
 
 function drawDarkText(ctx, text, x, y) {
+  // Font is set outside; this just makes it dark and heavy
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#000000";
   ctx.strokeText(text, x, y);
@@ -155,74 +155,74 @@ function updatePreview() {
   const canvas = document.getElementById("labelCanvas");
   const ctx = canvas.getContext("2d");
 
-  // Background
+  // Clear background
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // --- TEXT BLOCK (fixed font size, auto-spaced between QR top & bottom) ---
-ctx.font = '56px Arial, sans-serif';
+  // --- TEXT BLOCK: 56px Arial, auto-spaced between QR top & bottom ---
+  const qrTop = 110;
+  const qrSize = 380;
+  const qrBottom = qrTop + qrSize;
 
-const qrTop = 110;
-const qrSize = 380;
-const qrBottom = qrTop + qrSize;
+  const fontSize = 56;
+  ctx.font = fontSize + 'px Arial, sans-serif';
 
-const left = 90;
+  const left = 90;
 
-// Only use non-empty fields
-const nonEmpty = Object.entries(fields)
-  .filter(([_, v]) => v.trim().length > 0);
+  const nonEmpty = Object.entries(fields)
+    .filter(([_, v]) => v.trim().length > 0);
 
-const lineCount = nonEmpty.length;
+  const lineCount = nonEmpty.length;
 
-if (lineCount > 0) {
-  if (lineCount === 1) {
-    // Single line: center it vertically in the QR area
-    const center = (qrTop + qrBottom) / 2;
-    const baseline = center + 56 / 2 - 4;  // small tweak to look optically centered
-    const [label, val] = nonEmpty[0];
-    const text = `${label.padEnd(4)} ${val.toUpperCase()}`;
-    drawDarkText(ctx, text, left, Math.round(baseline));
-  } else {
-    // Multiple lines: first near top, last near bottom, equally spaced
-    const fontSize = 56;
-    const topPadding = 8;    // small padding inside QR area
-    const bottomPadding = 8; // small padding inside QR area
-
-    const firstBaseline = qrTop + topPadding + fontSize;    // baseline for first line
-    const lastBaseline  = qrBottom - bottomPadding;         // baseline for last line
-
-    const totalSpan = lastBaseline - firstBaseline;
-    const lineStep = totalSpan / (lineCount - 1);
-
-    let y = firstBaseline;
-
-    for (const [label, val] of nonEmpty) {
+  if (lineCount > 0) {
+    if (lineCount === 1) {
+      // Center single line vertically in QR area
+      const center = (qrTop + qrBottom) / 2;
+      const baseline = center + fontSize / 2 - 4;
+      const [label, val] = nonEmpty[0];
       const text = `${label.padEnd(4)} ${val.toUpperCase()}`;
-      drawDarkText(ctx, text, left, Math.round(y));
-      y += lineStep;
+      drawDarkText(ctx, text, left, Math.round(baseline));
+    } else {
+      // First baseline near top, last near bottom, equal spacing
+      const topPadding = 8;
+      const bottomPadding = 8;
+
+      const firstBaseline = qrTop + topPadding + fontSize;
+      const lastBaseline  = qrBottom - bottomPadding;
+
+      const totalSpan = lastBaseline - firstBaseline;
+      const lineStep = totalSpan / (lineCount - 1);
+
+      let y = firstBaseline;
+      for (const [label, val] of nonEmpty) {
+        const text = `${label.padEnd(4)} ${val.toUpperCase()}`;
+        drawDarkText(ctx, text, left, Math.round(y));
+        y += lineStep;
+      }
     }
   }
-}
 
-  // QR code
+  // --- QR code on the right ---
   const temp = document.createElement("div");
   temp.style.position = "absolute";
   temp.style.left = "-9999px";
   document.body.appendChild(temp);
 
-  const qrSize = 380;
+  const qrSizePx = 380;
 
   new QRCode(temp, {
     text: qrText,
-    width: qrSize,
-    height: qrSize,
-    correctLevel: QRCode.CorrectLevel.M
+    width: qrSizePx,
+    height: qrSizePx,
+    correctLevel: QRCode.CorrectLevel.L
   });
 
   setTimeout(() => {
     const img = temp.querySelector("img") || temp.querySelector("canvas");
     if (img) {
-      ctx.drawImage(img, 720, 110, qrSize, qrSize);
+      const qrX = 720;
+      const qrY = 110;
+      ctx.drawImage(img, qrX, qrY, qrSizePx, qrSizePx);
     }
     temp.remove();
   }, 80);
@@ -235,6 +235,8 @@ function downloadPng() {
   link.download = "location-label.png";
   link.click();
 }
+
+// Draw initial preview
 updatePreview();
 </script>
 
