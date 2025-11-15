@@ -159,20 +159,50 @@ function updatePreview() {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // TEXT BLOCK (fixed height + spacing)
-  ctx.font = '56px Arial, sans-serif';
+  // --- TEXT BLOCK (fixed font size, auto-spaced between QR top & bottom) ---
+ctx.font = '56px Arial, sans-serif';
 
-  let y = 140;               
-  const line = 70;           
-  const left = 90;
+const qrTop = 110;
+const qrSize = 380;
+const qrBottom = qrTop + qrSize;
 
-  const nonEmpty = Object.entries(fields)
-    .filter(([_, v]) => v.trim().length > 0);
+const left = 90;
 
-  for (const [label, val] of nonEmpty) {
-    drawDarkText(ctx, `${label.padEnd(4)} ${val.toUpperCase()}`, left, y);
-    y += line;
+// Only use non-empty fields
+const nonEmpty = Object.entries(fields)
+  .filter(([_, v]) => v.trim().length > 0);
+
+const lineCount = nonEmpty.length;
+
+if (lineCount > 0) {
+  if (lineCount === 1) {
+    // Single line: center it vertically in the QR area
+    const center = (qrTop + qrBottom) / 2;
+    const baseline = center + 56 / 2 - 4;  // small tweak to look optically centered
+    const [label, val] = nonEmpty[0];
+    const text = `${label.padEnd(4)} ${val.toUpperCase()}`;
+    drawDarkText(ctx, text, left, Math.round(baseline));
+  } else {
+    // Multiple lines: first near top, last near bottom, equally spaced
+    const fontSize = 56;
+    const topPadding = 8;    // small padding inside QR area
+    const bottomPadding = 8; // small padding inside QR area
+
+    const firstBaseline = qrTop + topPadding + fontSize;    // baseline for first line
+    const lastBaseline  = qrBottom - bottomPadding;         // baseline for last line
+
+    const totalSpan = lastBaseline - firstBaseline;
+    const lineStep = totalSpan / (lineCount - 1);
+
+    let y = firstBaseline;
+
+    for (const [label, val] of nonEmpty) {
+      const text = `${label.padEnd(4)} ${val.toUpperCase()}`;
+      drawDarkText(ctx, text, left, Math.round(y));
+      y += lineStep;
+    }
   }
+}
 
   // QR code
   const temp = document.createElement("div");
