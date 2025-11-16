@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tally Location Label Maker</title>
+<title>Location Label Maker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    padding: 16px;
+    padding: 12px;
     margin: 0;
     background: #f5f5f5;
   }
@@ -41,6 +41,15 @@
     border: 1px solid #ccc;
     box-sizing: border-box;
   }
+  .dash-toggle {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+  .dash-toggle label {
+    font-weight: 400;
+    margin-right: 8px;
+  }
   .buttons {
     display: flex;
     flex-direction: column;
@@ -72,7 +81,7 @@
     border: 1px solid #ddd;
   }
   .hint {
-    font-size: 16px;
+    font-size: 11px;
     text-align: center;
     color: #666;
   }
@@ -81,27 +90,56 @@
 <body>
 
 <div class="container">
-  <h2>Tally Location Label Maker (2×4)</h2>
+  <h2>Location Label Maker (2×4)</h2>
 
   <div class="field">
     <label for="zone">Zone</label>
     <input id="zone" inputmode="numeric" autocomplete="off">
+    <div class="dash-toggle">
+      Dash after Zone:
+      <label><input type="radio" name="zoneSep" value="-" checked> -</label>
+      <label><input type="radio" name="zoneSep" value="--"> --</label>
+    </div>
   </div>
+
   <div class="field">
     <label for="dept">Dept</label>
     <input id="dept" autocomplete="off">
+    <div class="dash-toggle">
+      Dash after Dept:
+      <label><input type="radio" name="deptSep" value="-" checked> -</label>
+      <label><input type="radio" name="deptSep" value="--"> --</label>
+    </div>
   </div>
+
   <div class="field">
     <label for="aisle">Aisle</label>
     <input id="aisle" autocomplete="off">
+    <div class="dash-toggle">
+      Dash after Aisle:
+      <label><input type="radio" name="aisleSep" value="-" checked> -</label>
+      <label><input type="radio" name="aisleSep" value="--"> --</label>
+    </div>
   </div>
+
   <div class="field">
     <label for="side">Side</label>
     <input id="side" autocomplete="off">
+    <div class="dash-toggle">
+      Dash after Side:
+      <label><input type="radio" name="sideSep" value="-" checked> -</label>
+      <label><input type="radio" name="sideSep" value="--"> --</label>
+    </div>
   </div>
+
   <div class="field">
     <label for="seg">Seg</label>
     <input id="seg" inputmode="numeric" autocomplete="off">
+    <div class="dash-toggle">
+      Dash after Seg (ignored if last):
+      <label><input type="radio" name="segSep" value="-" checked> -</label>
+      <label><input type="radio" name="segSep" value="--"> --</label>
+    </div>
   </div>
 
   <div class="buttons">
@@ -111,24 +149,45 @@
 
   <canvas id="labelCanvas" width="1200" height="600"></canvas>
   <div class="hint">
-    PNG is 1200×600 for sharp 2×4 label printing. Blank fields are skipped in text & QR.
-    *DIY Location Tag Program Testing Purposes 11/2025*
+    PNG is 1200×600 for sharp 2×4 label printing. Blank fields are skipped in text.  
+    Separators between QR segments are controlled by the dash toggles.
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-function buildQrText(parts) {
-  return parts
-    .map(x => x.trim())
-    .filter(x => x.length > 0)
-    .map(x => x.toUpperCase())
-    .join("--");
+function getSep(groupName) {
+  const checked = document.querySelector(`input[name="${groupName}"]:checked`);
+  return checked ? checked.value : "-";
+}
+
+// Build QR text using per-field dash settings
+function buildQrTextWithSeps(values, seps) {
+  let result = "";
+  let prevIndex = null; // index of last non-empty field
+
+  for (let i = 0; i < values.length; i++) {
+    const raw = values[i] || "";
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+
+    const upper = trimmed.toUpperCase();
+    if (prevIndex === null) {
+      // first non-empty segment
+      result += upper;
+    } else {
+      // separator is determined by the previous non-empty field's setting
+      const sep = seps[prevIndex] || "-";
+      result += sep + upper;
+    }
+    prevIndex = i;
+  }
+
+  return result;
 }
 
 function drawDarkText(ctx, text, x, y) {
-  // Font is set outside; this just makes it dark and heavy
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#000000";
   ctx.strokeText(text, x, y);
@@ -145,13 +204,19 @@ function updatePreview() {
     Seg:   document.getElementById('seg').value
   };
 
-  const qrText = buildQrText([
-    fields.Zone,
-    fields.Dept,
-    fields.Aisle,
-    fields.Side,
-    fields.Seg
-  ]) || " ";
+  // Order matters for QR and text layout
+  const fieldOrder = ["Zone", "Dept", "Aisle", "Side", "Seg"];
+
+  const values = fieldOrder.map(key => fields[key]);
+  const seps = [
+    getSep("zoneSep"),
+    getSep("deptSep"),
+    getSep("aisleSep"),
+    getSep("sideSep"),
+    getSep("segSep")
+  ];
+
+  const qrText = buildQrTextWithSeps(values, seps) || " ";
 
   const canvas = document.getElementById("labelCanvas");
   const ctx = canvas.getContext("2d");
@@ -160,7 +225,7 @@ function updatePreview() {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // --- TEXT BLOCK: 56px Arial, auto-spaced between QR top & bottom ---
+  // --- TEXT BLOCK: 56px Arial, fixed but nice spacing ---
   const qrTop = 110;
   const qrSize = 380;
   const qrBottom = qrTop + qrSize;
@@ -170,7 +235,8 @@ function updatePreview() {
 
   const left = 90;
 
-  const nonEmpty = Object.entries(fields)
+  const nonEmpty = fieldOrder
+    .map(key => [key, fields[key]])
     .filter(([_, v]) => v.trim().length > 0);
 
   const lineCount = nonEmpty.length;
@@ -237,7 +303,7 @@ function downloadPng() {
   link.click();
 }
 
-// Draw initial preview
+// Initial preview
 updatePreview();
 </script>
 
